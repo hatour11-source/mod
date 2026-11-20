@@ -22,6 +22,12 @@
   #bands rect{fill:var(--band-b)}
   #stage{position:fixed;inset:0;width:100%;height:100%;z-index:1;cursor:grab;touch-action:none}
   #stage.drag{cursor:grabbing}
+  #stage{user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+  #zoom{position:fixed;right:14px;bottom:90px;z-index:6;display:flex;flex-direction:column;gap:8px}
+  #zoom button{width:44px;height:44px;border-radius:50%;border:1px solid #c5cddb;background:#fff;color:var(--ink);font-size:24px;line-height:1;cursor:pointer;box-shadow:0 3px 10px rgba(20,40,100,.18)}
+  #zoom button:active{background:#e8eefb}
+  header{overflow-x:auto;white-space:nowrap}
+  @media (max-width:600px){header{padding:0 8px}header h1{font-size:15px}}
   .node{cursor:pointer}
   .node .label{font-size:13px;fill:var(--ink);text-anchor:middle;pointer-events:none}
   .node:hover .avatar{transform:translateY(-2px)}
@@ -77,6 +83,7 @@
   <button id="btnStart">Өөрийгөө нэмэх</button>
 </div>
 
+<div id="zoom"><button id="zIn" aria-label="Томруулах">+</button><button id="zOut" aria-label="Жижигрүүлэх">&minus;</button></div>
 <div id="menu"></div>
 <div id="tip"></div>
 <div id="toast"></div>
@@ -328,11 +335,10 @@ function render(fit){
     if (p.id === S.root) t.setAttribute('font-weight', '700');
     el('rect', { x:-14, y:-8, width:84, height:124, fill:'transparent' }, g);
 
-    g.addEventListener('pointerdown', e => e.stopPropagation());
-    g.addEventListener('click', e => { e.stopPropagation(); selectPerson(p.id, g); });
+    g.addEventListener('click', e => { e.stopPropagation(); if (suppressClick) return; selectPerson(p.id, g); });
     g.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectPerson(p.id, g); } });
-    g.addEventListener('mousemove', e => showTip(p, e));
-    g.addEventListener('mouseleave', hideTip);
+    g.addEventListener('pointermove', e => { if (e.pointerType === 'mouse' && !gesture) showTip(p, e); });
+    g.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse') hideTip(); });
   });
 
   levelTop = [];
@@ -358,21 +364,63 @@ function fitView(){
   view.y = 52 + (H - 52 - bb.height*view.k)/2 - bb.y*view.k;
   applyView();
 }
-let drag = null;
+const ptrs = new Map();
+let gesture = null, suppressClick = false;
+const dist = (a,b) => Math.hypot(a.x-b.x, a.y-b.y);
+const clampK = k => Math.min(2.5, Math.max(.2, k));
 stage.addEventListener('pointerdown', e => {
-  drag = { x:e.clientX, y:e.clientY, vx:view.x, vy:view.y, moved:false };
-  stage.setPointerCapture(e.pointerId);
+  ptrs.set(e.pointerId, { x:e.clientX, y:e.clientY });
+  if (ptrs.size === 1){
+    gesture = { mode:'pan', x:e.clientX, y:e.clientY, vx:view.x, vy:view.y, moved:false, onNode: !!e.target.closest('.node') };
+  } else if (ptrs.size === 2){
+    const [a,b] = [...ptrs.values()];
+    gesture = { mode:'pinch', d:dist(a,b), cx:(a.x+b.x)/2, cy:(a.y+b.y)/2, k:view.k, vx:view.x, vy:view.y, moved:true, onNode:true };
+    hideMenu(); hideTip();
+  }
 });
 stage.addEventListener('pointermove', e => {
-  if (!drag) return;
-  const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
-  if (Math.abs(dx) + Math.abs(dy) > 3){ drag.moved = true; stage.classList.add('drag'); hideMenu(); }
-  if (drag.moved){ view.x = drag.vx + dx; view.y = drag.vy + dy; applyView(); }
+  if (!ptrs.has(e.pointerId)) return;
+  ptrs.set(e.pointerId, { x:e.clientX, y:e.clientY });
+  if (!gesture) return;
+  if (gesture.mode === 'pan' && ptrs.size === 1){
+    const dx = e.clientX - gesture.x, dy = e.clientY - gesture.y;
+    if (!gesture.moved && Math.abs(dx) + Math.abs(dy) > 8){
+      gesture.moved = true; stage.classList.add('drag'); hideMenu(); hideTip();
+      try { stage.setPointerCapture(e.pointerId); } catch(err){}
+    }
+    if (gesture.moved){ view.x = gesture.vx + dx; view.y = gesture.vy + dy; applyView(); }
+  } else if (gesture.mode === 'pinch' && ptrs.size === 2){
+    const [a,b] = [...ptrs.values()];
+    const cx = (a.x+b.x)/2, cy = (a.y+b.y)/2;
+    const k2 = clampK(gesture.k * dist(a,b) / gesture.d);
+    const wx = (gesture.cx - gesture.vx)/gesture.k, wy = (gesture.cy - gesture.vy)/gesture.k;
+    view.k = k2; view.x = cx - wx*k2; view.y = cy - wy*k2; applyView();
+  }
 });
-stage.addEventListener('pointerup', () => {
-  if (drag && !drag.moved){ selected = null; hideMenu(); if (S) render(false); }
-  drag = null; stage.classList.remove('drag');
-});
+function endPointer(e){
+  if (!ptrs.has(e.pointerId)) return;
+  ptrs.delete(e.pointerId);
+  if (gesture){
+    if (gesture.moved){ suppressClick = true; setTimeout(() => suppressClick = false, 350); }
+    else if (gesture.mode === 'pan' && !gesture.onNode && e.type === 'pointerup'){
+      selected = null; hideMenu(); hideTip(); if (S) render(false);
+    }
+  }
+  if (ptrs.size === 0){ gesture = null; stage.classList.remove('drag'); }
+  else if (ptrs.size === 1){
+    const r = [...ptrs.values()][0];
+    gesture = { mode:'pan', x:r.x, y:r.y, vx:view.x, vy:view.y, moved:true, onNode:true };
+  }
+}
+stage.addEventListener('pointerup', endPointer);
+stage.addEventListener('pointercancel', endPointer);
+function zoomBy(f){
+  const cx = stage.clientWidth/2, cy = stage.clientHeight/2, k2 = clampK(view.k * f);
+  view.x = cx - (cx - view.x) * (k2/view.k); view.y = cy - (cy - view.y) * (k2/view.k);
+  view.k = k2; applyView(); hideMenu();
+}
+$('zIn').onclick = () => zoomBy(1.3);
+$('zOut').onclick = () => zoomBy(1/1.3);
 stage.addEventListener('wheel', e => {
   e.preventDefault();
   const k2 = Math.min(2.5, Math.max(.25, view.k * (1 - e.deltaY * 0.0012)));
@@ -383,7 +431,7 @@ stage.addEventListener('wheel', e => {
 window.addEventListener('resize', () => S && fitView());
 
 /* ---------- Tooltip ---------- */
-function showTip(p, e){
+function fillTip(p){
   const P = S.people, tip = $('tip');
   tip.innerHTML = '';
   const b = document.createElement('b'); b.textContent = p.name; tip.appendChild(b);
@@ -393,15 +441,27 @@ function showTip(p, e){
   const sibs = siblingsOf(p); if (sibs.length) line('Ах эгч дүү: ' + sibs.map(s => s.name).join(', '));
   const kids = childrenOf(p); if (kids.length) line('Хүүхэд: ' + kids.map(s => s.name).join(', '));
   tip.style.display = 'block';
+  return tip;
+}
+function showTip(p, e){            // mouse hover
+  const tip = fillTip(p);
+  tip.style.bottom = 'auto'; tip.style.transform = 'none'; tip.style.width = ''; tip.style.maxWidth = '';
   tip.style.left = Math.min(e.clientX + 16, innerWidth - 300) + 'px';
   tip.style.top = (e.clientY + 16) + 'px';
 }
-function hideTip(){ $('tip').style.display = 'none'; }
+function showCard(p){              // tap / click: card at the bottom of the screen
+  const tip = fillTip(p);
+  tip.style.left = '50%'; tip.style.top = 'auto'; tip.style.bottom = '18px';
+  tip.style.transform = 'translateX(-50%)'; tip.style.width = 'min(92vw, 340px)';
+  tip.style.maxWidth = 'none';
+}
+function hideTip(){ const t = $('tip'); t.style.display = 'none'; t.style.width = ''; t.style.maxWidth = ''; }
 
 /* ---------- Action menu ---------- */
 function hideMenu(){ $('menu').style.display = 'none'; }
 function selectPerson(id, g){
   selected = id; render(false);
+  showCard(S.people[id]);
   if (!EDIT) return;
   const node = vp.querySelector(`[data-id="${id}"]`);
   const r = node.getBoundingClientRect(), p = S.people[id], m = $('menu');
