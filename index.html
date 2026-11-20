@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="mn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Удмын мод</title>
+<style>
+  :root{
+    --bg:#eef1f6; --band-a:#f6f8fb; --band-b:#dde2ea;
+    --ink:#1b2438; --muted:#5b6578;
+    --blue:#2557d6; --red:#e0393e; --gray:#a0a7b4; --card:#1c2538;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;font-family:"Segoe UI",system-ui,sans-serif;color:var(--ink);background:var(--bg);overflow:hidden}
+  header{position:fixed;inset:0 0 auto 0;height:52px;display:flex;align-items:center;gap:8px;padding:0 16px;z-index:5;
+    background:rgba(255,255,255,.85);backdrop-filter:blur(6px);border-bottom:1px solid #d3d9e3}
+  header h1{font-size:17px;margin:0 auto 0 0;font-weight:600}
+  header button, .btn{font:inherit;font-size:13px;padding:6px 12px;border-radius:8px;border:1px solid #c5cddb;background:#fff;color:var(--ink);cursor:pointer}
+  header button:hover{background:#f0f3f9}
+  header button:focus-visible,.menu button:focus-visible,dialog button:focus-visible{outline:3px solid #8fb0ff;outline-offset:1px}
+  #bands{position:fixed;inset:0;z-index:0}
+  #bands rect{fill:var(--band-b)}
+  #stage{position:fixed;inset:0;width:100%;height:100%;z-index:1;cursor:grab;touch-action:none}
+  #stage.drag{cursor:grabbing}
+  #stage{user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+  #zoom{position:fixed;right:14px;bottom:90px;z-index:6;display:flex;flex-direction:column;gap:8px}
+  #zoom button{width:44px;height:44px;border-radius:50%;border:1px solid #c5cddb;background:#fff;color:var(--ink);font-size:24px;line-height:1;cursor:pointer;box-shadow:0 3px 10px rgba(20,40,100,.18)}
+  #zoom button:active{background:#e8eefb}
+  header{overflow-x:auto;white-space:nowrap}
+  @media (max-width:600px){header{padding:0 8px}header h1{font-size:15px}}
+  .node{cursor:pointer}
+  .node .label{font-size:13px;fill:var(--ink);text-anchor:middle;pointer-events:none}
+  .node:hover .avatar{transform:translateY(-2px)}
+  .avatar{transition:transform .12s}
+  #menu{position:fixed;z-index:20;display:none;flex-direction:column;gap:6px}
+  #menu button{font:inherit;font-size:13px;font-weight:600;color:#fff;background:var(--blue);border:0;border-radius:999px;
+    padding:7px 14px;cursor:pointer;text-align:left;box-shadow:0 3px 10px rgba(20,40,100,.25);white-space:nowrap}
+  #menu button:hover{background:#1b46b3}
+  #menu button.edit{background:#3a4660}
+  #menu button.del{background:#c0332f}
+  #menu button.del:hover{background:#a02622}
+  #tip{position:fixed;z-index:15;display:none;pointer-events:none;background:var(--card);color:#e8edf7;border-radius:8px;
+    padding:10px 14px;font-size:13px;line-height:1.45;max-width:280px;box-shadow:0 6px 18px rgba(0,0,0,.28);border:1px solid #39435a}
+  #tip b{display:block;color:#fff;font-size:14px;margin-bottom:2px}
+  #empty{position:fixed;inset:0;z-index:3;display:none;align-items:center;justify-content:center;flex-direction:column;gap:14px;text-align:center;padding:24px}
+  #empty h2{margin:0;font-size:22px}
+  #empty p{margin:0;color:var(--muted)}
+  #empty button{font:inherit;font-size:15px;font-weight:600;color:#fff;background:var(--blue);border:0;border-radius:10px;padding:10px 22px;cursor:pointer}
+  #toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:30;background:#1c2538;color:#fff;padding:10px 16px;border-radius:8px;font-size:13px;display:none}
+  dialog{border:0;border-radius:14px;padding:22px 24px;width:min(360px,92vw);box-shadow:0 20px 50px rgba(10,20,50,.35);color:var(--ink)}
+  dialog::backdrop{background:rgba(20,28,48,.4)}
+  dialog h3{margin:0 0 14px;font-size:17px}
+  dialog label.f{display:block;font-size:13px;color:var(--muted);margin:12px 0 5px}
+  dialog input[type=text],dialog select{width:100%;font:inherit;font-size:15px;padding:9px 10px;border:1px solid #c5cddb;border-radius:8px}
+  .radios{display:flex;gap:10px}
+  .radios label{flex:1;display:flex;align-items:center;gap:8px;border:1px solid #c5cddb;border-radius:8px;padding:8px 10px;cursor:pointer;font-size:14px}
+  .radios label:has(input:checked){border-color:var(--blue);background:#eaf0ff}
+  .radios label.dis{opacity:.5;cursor:not-allowed}
+  .actions{display:flex;gap:8px;margin-top:20px}
+  .actions .sp{flex:1}
+  .actions button{font:inherit;font-size:14px;padding:8px 16px;border-radius:8px;border:1px solid #c5cddb;background:#fff;cursor:pointer}
+  .actions .ok{background:var(--blue);border-color:var(--blue);color:#fff;font-weight:600}
+  .actions .del{color:#b3261e;border-color:#e9b8b4}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Удмын мод</h1>
+  <button id="btnFit" title="Модыг дэлгэцэнд багтаах">Төвд харуулах</button>
+  <button id="btnExport">JSON хадгалах</button>
+  <button id="btnImport">JSON нээх</button>
+  <button id="btnReset">Шинээр эхлэх</button>
+  <input type="file" id="file" accept=".json,application/json" hidden>
+</header>
+
+<svg id="bands" aria-hidden="true"></svg>
+<svg id="stage" role="img" aria-label="Удмын мод"><g id="vp"></g></svg>
+
+<div id="empty">
+  <h2>Удмын модоо эхлүүлье</h2>
+  <p>Эхлээд өөрийнхөө нэр, хүйсийг оруулна. Дараа нь өөрийн дүр дээр дарж аав, ээж, ах эгч дүү, хань, хүүхдээ нэмнэ.</p>
+  <button id="btnStart">Өөрийгөө нэмэх</button>
+</div>
+
+<div id="zoom"><button id="zIn" aria-label="Томруулах">+</button><button id="zOut" aria-label="Жижигрүүлэх">&minus;</button></div>
+<div id="menu"></div>
+<div id="tip"></div>
+<div id="toast"></div>
+
+<dialog id="dlg">
+  <form id="form" method="dialog">
+    <h3 id="dTitle"></h3>
+    <label class="f" for="dName">Нэр</label>
+    <input type="text" id="dName" autocomplete="off" maxlength="40">
+    <div id="gRow">
+      <label class="f">Хүйс</label>
+      <div class="radios">
+        <label id="lm"><input type="radio" name="g" value="m"> Эрэгтэй</label>
+        <label id="lf"><input type="radio" name="g" value="f"> Эмэгтэй</label>
+      </div>
+    </div>
+    <div id="oRow">
+      <label class="f" for="dOrder">Байр суурь</label>
+      <select id="dOrder">
+        <option value="older">Ах / эгч (надаас том)</option>
+        <option value="younger">Дүү (надаас бага)</option>
+      </select>
+    </div>
+    <div class="actions">
+      <button type="button" class="del" id="dDel">Устгах</button>
+      <span class="sp"></span>
+      <button type="button" id="dCancel">Болих</button>
+      <button type="submit" class="ok">Хадгалах</button>
+    </div>
+  </form>
+</dialog>
+
+<script>
+(() => {
+'use strict';
+
+/* ---------- Layout constants ---------- */
+const SLOT = 120;          // width reserved per person
+const GAP = 36;            // min gap between units on one row
+const LEVEL_GAP = 240;     // vertical distance between generations
+const TOP = 90;            // y of first generation
+const KEY = 'udmiin-mod.v1';
+const NS = 'http://www.w3.org/2000/svg';
+
+/* ---------- State ---------- */
+const EDIT = new URLSearchParams(location.search).has('edit');   // засварлах горим: ?edit
+let PUBLISHED = null;      // tree.json дахь нийтлэгдсэн мод
+let S = null;              // { people:{id:{...}}, root:id, next:n }
+let selected = null;
+const view = { x: 0, y: 0, k: 1 };
+let maxLevel = 0, levelTop = [], focusX = 0;
+
+const $ = id => document.getElementById(id);
+const stage = $('stage'), vp = $('vp'), bands = $('bands');
+
+function load(){
+  try { const s = JSON.parse(localStorage.getItem(KEY)); if (s && s.people && s.root) return s; } catch(e){}
+  return null;
+}
+function save(){ if (!EDIT) return; try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e){} }
+
+function newPerson(name, gender){
+  const id = S.next++;
+  return (S.people[id] = { id, name, gender, father:null, mother:null, spouse:null, ord:id });
+}
+const all = () => Object.values(S.people);
+const opposite = g => g === 'm' ? 'f' : 'm';
+const marry = (a,b) => { a.spouse = b.id; b.spouse = a.id; };
+const childrenOf = p => all().filter(c => c.father === p.id || c.mother === p.id);
+const siblingsOf = p => (p.father && p.mother)
+  ? all().filter(c => c.id !== p.id && c.father === p.father && c.mother === p.mother).sort((a,b)=>a.ord-b.ord) : [];
+
+/* ---------- Layout ---------- */
+function layout(){
+  const P = S.people, people = all();
+
+  // generation levels (BFS from root)
+  const lvl = {}; lvl[S.root] = 0;
+  const kids = {}; people.forEach(p => kids[p.id] = []);
+  people.forEach(p => { if (p.father) kids[p.father].push(p.id); if (p.mother) kids[p.mother].push(p.id); });
+  const q = [S.root];
+  while (q.length){
+    const id = q.shift(), p = P[id], l = lvl[id];
+    const next = [];
+    if (p.father) next.push([p.father, l-1]);
+    if (p.mother) next.push([p.mother, l-1]);
+    if (p.spouse) next.push([p.spouse, l]);
+    kids[id].forEach(c => next.push([c, l+1]));
+    next.forEach(([n,nl]) => { if (lvl[n] === undefined){ lvl[n] = nl; q.push(n); } });
+  }
+  const minL = Math.min(...Object.values(lvl));
+
+  // units = couple or single person
+  const units = [], unitOf = {};
+  people.forEach(p => {
+    if (unitOf[p.id] || lvl[p.id] === undefined) return;
+    const s = p.spouse ? P[p.spouse] : null;
+    let m = s ? [p, s] : [p];
+    if (s && !(p.gender === 'm' || s.gender !== 'm')) m = [s, p];
+    const u = { ids: m.map(x => x.id), x: 0, level: lvl[p.id] - minL, parents: [], kids: [] };
+    u.w = u.ids.length * SLOT;
+    const withParents = m.find(x => x.father);
+    u.key = (withParents || m[0]).ord;
+    units.push(u); m.forEach(x => unitOf[x.id] = u);
+  });
+  units.forEach(u => {
+    const set = new Set();
+    u.ids.forEach(id => { const p = P[id]; if (p.father && unitOf[p.father]) set.add(unitOf[p.father]); });
+    u.parents = [...set];
+    u.parents.forEach(pu => pu.kids.push(u));
+  });
+
+  maxLevel = Math.max(...units.map(u => u.level));
+  const rows = [];
+  for (let l = 0; l <= maxLevel; l++) rows.push(units.filter(u => u.level === l));
+
+  const mean = arr => arr.reduce((a,b)=>a+b.x,0) / arr.length;
+  // place a row: keep order, no overlaps, as close as possible to desired x (pool-adjacent-violators)
+  const place = (row, desired) => {
+    const off = [0];
+    for (let i = 1; i < row.length; i++) off[i] = off[i-1] + (row[i-1].w + row[i].w)/2 + GAP;
+    const blocks = [];
+    desired.forEach((d,i) => {
+      blocks.push({ s:d - off[i], c:1 });
+      while (blocks.length > 1){
+        const b = blocks[blocks.length-1], a = blocks[blocks.length-2];
+        if (a.s/a.c > b.s/b.c){ a.s += b.s; a.c += b.c; blocks.pop(); } else break;
+      }
+    });
+    let i = 0;
+    blocks.forEach(b => { const v = b.s/b.c; for (let k = 0; k < b.c; k++, i++) row[i].x = v + off[i]; });
+  };
+
+  // initial placement top-down
+  rows[0].forEach(u => {
+    u.side = 0;
+    u.kids.forEach(ku => {
+      if (ku.ids.length !== 2) return;
+      const i = ku.ids.findIndex(id => u.ids.includes(P[id].father));
+      if (i === 0) u.side -= 1; else if (i === 1) u.side += 1;
+    });
+  });
+  rows[0].sort((a,b) => a.side - b.side || a.key - b.key);
+  let cur = 0;
+  rows[0].forEach(u => { u.x = cur + u.w/2; cur += u.w + GAP; });
+  for (let l = 1; l <= maxLevel; l++){
+    const row = rows[l];
+    row.forEach(u => u.b = u.parents.length ? mean(u.parents) : Infinity);
+    row.sort((a,b) => (a.b === b.b ? a.key - b.key : a.b - b.b));
+    let prev = 0;
+    row.forEach(u => { u.x = isFinite(u.b) ? u.b : prev + u.w/2; prev = u.x + u.w/2; });
+    place(row, row.map(u => u.x));
+  }
+  // refine: kids spread symmetrically under parents, parents centred over kids
+  const up = () => { for (let l = maxLevel - 1; l >= 0; l--) place(rows[l], rows[l].map(u => u.kids.length ? mean(u.kids) : u.x)); };
+  const down = () => { for (let l = 1; l <= maxLevel; l++) place(rows[l], rows[l].map(u => u.parents.length ? mean(u.parents) : u.x)); };
+  for (let it = 0; it < 8; it++){ down(); up(); }
+  // person positions
+  const pos = {};
+  units.forEach(u => u.ids.forEach((id,i) => {
+    pos[id] = { x: u.x + (i - (u.ids.length-1)/2) * SLOT, y: TOP + u.level * LEVEL_GAP };
+  }));
+  // focus: the root's parents (or the root itself) are kept in the middle of the view
+  const fu = P[S.root].father ? unitOf[P[S.root].father] : unitOf[S.root];
+  return { units, unitOf, pos, focusX: fu.x };
+}
+
+/* ---------- SVG helpers ---------- */
+function el(tag, attrs, parent){
+  const e = document.createElementNS(NS, tag);
+  for (const k in attrs) e.setAttribute(k, attrs[k]);
+  if (parent) parent.appendChild(e);
+  return e;
+}
+
+function drawAvatar(parent, gender){
+  const a = el('g', { class:'avatar' }, parent);
+  el('ellipse', { cx:28, cy:86, rx:21, ry:5, fill:'#dfe7f7', stroke:'#3b6fd4', 'stroke-width':3 }, a);
+  if (gender === 'm'){
+    el('rect', { x:10, y:38, width:36, height:46, rx:9, fill:'#1f3358' }, a);
+    el('rect', { x:10, y:57, width:36, height:5, fill:'#d9742b' }, a);
+    el('path', { d:'M22 38 L28 48 L34 38Z', fill:'#e9d8c4' }, a);
+    el('circle', { cx:28, cy:23, r:13, fill:'#f1d2b4' }, a);
+    el('path', { d:'M15 22 C15 7 41 7 41 22 C37 15 19 15 15 22Z', fill:'#2b2320' }, a);
+  } else {
+    el('path', { d:'M13 24 C13 5 43 5 43 24 L46 50 L10 50Z', fill:'#5b3b2d' }, a);
+    el('rect', { x:10, y:38, width:36, height:46, rx:9, fill:'#f4e4d2' }, a);
+    el('rect', { x:10, y:57, width:36, height:5, fill:'#b5483c' }, a);
+    el('circle', { cx:28, cy:23, r:13, fill:'#f1d2b4' }, a);
+    el('path', { d:'M15 22 C15 8 41 8 41 22 C35 14 21 14 15 22Z', fill:'#5b3b2d' }, a);
+  }
+  el('circle', { cx:23, cy:25, r:1.3, fill:'#333' }, a);
+  el('circle', { cx:33, cy:25, r:1.3, fill:'#333' }, a);
+}
+
+function starPoints(cx, cy, R, r){
+  const pts = [];
+  for (let i = 0; i < 10; i++){
+    const ang = -Math.PI/2 + i * Math.PI/5, rad = i % 2 ? r : R;
+    pts.push((cx + rad*Math.cos(ang)).toFixed(1) + ',' + (cy + rad*Math.sin(ang)).toFixed(1));
+  }
+  return pts.join(' ');
+}
+
+/* ---------- Render ---------- */
+function render(fit){
+  vp.innerHTML = '';
+  hideMenu(); hideTip();
+  if (!S){ $('empty').style.display = 'flex'; bands.innerHTML=''; return; }
+  $('empty').style.display = 'none';
+
+  const { units, unitOf, pos, focusX: fx } = layout();
+  focusX = fx;
+  const P = S.people;
+
+  // ancestors of root (highlighted in red)
+  const blood = new Set(); (function walk(id){ if(!id||blood.has(id))return; blood.add(id); walk(P[id].father); walk(P[id].mother); })(S.root);
+
+  const edges = el('g', {}, vp), nodes = el('g', {}, vp);
+
+  units.forEach(u => {
+    const y0 = pos[u.ids[0]].y;
+    const dotY = y0 + 138, startY = y0 + 116;
+    if (u.ids.length === 2){
+      u.ids.forEach(id => {
+        const x = pos[id].x, mid = (startY + dotY)/2;
+        el('path', { d:`M${x},${startY} C${x},${mid} ${u.x},${mid} ${u.x},${dotY}`, fill:'none',
+          stroke:'#e0393e', 'stroke-width':3.2, 'stroke-linecap':'round' }, edges);
+      });
+      el('rect', { x:u.x-5, y:dotY-5, width:10, height:10, rx:3, fill:'#e0393e' }, edges);
+    }
+    u.kids.forEach(ku => ku.ids.forEach(id => {
+      const c = P[id];
+      if (!(u.ids.includes(c.father) && u.ids.includes(c.mother))) return;
+      const cx = pos[id].x, top = pos[id].y - 6, mid = (dotY + top)/2;
+      const red = blood.has(id);
+      el('path', { d:`M${u.x},${dotY} C${u.x},${mid} ${cx},${mid} ${cx},${top}`, fill:'none',
+        stroke: red ? '#e0393e' : '#a0a7b4', 'stroke-width': red ? 3.2 : 2, 'stroke-linecap':'round' }, edges);
+    }));
+  });
+
+  Object.values(P).forEach(p => {
+    const ps = pos[p.id]; if (!ps) return;
+    const g = el('g', { class:'node', transform:`translate(${ps.x-28},${ps.y})`, 'data-id':p.id, tabindex:0 }, nodes);
+    if (p.id === selected) el('circle', { cx:28, cy:52, r:52, fill:'none', stroke:'#9ca3af', 'stroke-width':7, opacity:.75 }, g);
+    drawAvatar(g, p.gender);
+    if (p.id === S.root) el('polygon', { points:starPoints(28,-10,15,6.5), fill:'#f08a4b', stroke:'#fff', 'stroke-width':2 }, g);
+    const t = el('text', { class:'label', x:28, y:108 }, g); t.textContent = p.name;
+    if (p.id === S.root) t.setAttribute('font-weight', '700');
+    el('rect', { x:-14, y:-8, width:84, height:124, fill:'transparent' }, g);
+
+    g.addEventListener('click', e => { e.stopPropagation(); if (suppressClick) return; selectPerson(p.id, g); });
+    g.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectPerson(p.id, g); } });
+    g.addEventListener('pointermove', e => { if (e.pointerType === 'mouse' && !gesture) showTip(p, e); });
+    g.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse') hideTip(); });
+  });
+
+  levelTop = [];
+  for (let l = 0; l <= maxLevel; l++) levelTop.push(TOP + l * LEVEL_GAP - 70);
+  if (fit) fitView(); else applyView();
+}
+
+/* ---------- View (pan / zoom) ---------- */
+function applyView(){
+  vp.setAttribute('transform', `translate(${view.x},${view.y}) scale(${view.k})`);
+  bands.innerHTML = '';
+  if (!S) return;
+  for (let l = 1; l <= maxLevel; l += 2){
+    el('rect', { x:0, width:'100%', y:view.y + levelTop[l]*view.k, height:LEVEL_GAP*view.k }, bands);
+  }
+}
+function fitView(){
+  const bb = vp.getBBox(), W = stage.clientWidth, H = stage.clientHeight, pad = 70;
+  if (!bb.width) return;
+  const half = Math.max(focusX - bb.x, bb.x + bb.width - focusX);
+  view.k = Math.min(1, (W - 2*pad)/(2*half), (H - 52 - 2*pad)/bb.height);
+  view.x = W/2 - focusX*view.k;
+  view.y = 52 + (H - 52 - bb.height*view.k)/2 - bb.y*view.k;
+  applyView();
+}
+const ptrs = new Map();
+let gesture = null, suppressClick = false;
+const dist = (a,b) => Math.hypot(a.x-b.x, a.y-b.y);
+const clampK = k => Math.min(2.5, Math.max(.2, k));
+stage.addEventListener('pointerdown', e => {
+  ptrs.set(e.pointerId, { x:e.clientX, y:e.clientY });
+  if (ptrs.size === 1){
+    gesture = { mode:'pan', x:e.clientX, y:e.clientY, vx:view.x, vy:view.y, moved:false, onNode: !!e.target.closest('.node') };
+  } else if (ptrs.size === 2){
+    const [a,b] = [...ptrs.values()];
+    gesture = { mode:'pinch', d:dist(a,b), cx:(a.x+b.x)/2, cy:(a.y+b.y)/2, k:view.k, vx:view.x, vy:view.y, moved:true, onNode:true };
+    hideMenu(); hideTip();
+  }
+});
+stage.addEventListener('pointermove', e => {
+  if (!ptrs.has(e.pointerId)) return;
+  ptrs.set(e.pointerId, { x:e.clientX, y:e.clientY });
+  if (!gesture) return;
+  if (gesture.mode === 'pan' && ptrs.size === 1){
+    const dx = e.clientX - gesture.x, dy = e.clientY - gesture.y;
+    if (!gesture.moved && Math.abs(dx) + Math.abs(dy) > 8){
+      gesture.moved = true; stage.classList.add('drag'); hideMenu(); hideTip();
+      try { stage.setPointerCapture(e.pointerId); } catch(err){}
+    }
+    if (gesture.moved){ view.x = gesture.vx + dx; view.y = gesture.vy + dy; applyView(); }
+  } else if (gesture.mode === 'pinch' && ptrs.size === 2){
+    const [a,b] = [...ptrs.values()];
+    const cx = (a.x+b.x)/2, cy = (a.y+b.y)/2;
+    const k2 = clampK(gesture.k * dist(a,b) / gesture.d);
+    const wx = (gesture.cx - gesture.vx)/gesture.k, wy = (gesture.cy - gesture.vy)/gesture.k;
+    view.k = k2; view.x = cx - wx*k2; view.y = cy - wy*k2; applyView();
+  }
+});
+function endPointer(e){
+  if (!ptrs.has(e.pointerId)) return;
+  ptrs.delete(e.pointerId);
+  if (gesture){
+    if (gesture.moved){ suppressClick = true; setTimeout(() => suppressClick = false, 350); }
+    else if (gesture.mode === 'pan' && !gesture.onNode && e.type === 'pointerup'){
+      selected = null; hideMenu(); hideTip(); if (S) render(false);
+    }
+  }
+  if (ptrs.size === 0){ gesture = null; stage.classList.remove('drag'); }
+  else if (ptrs.size === 1){
+    const r = [...ptrs.values()][0];
+    gesture = { mode:'pan', x:r.x, y:r.y, vx:view.x, vy:view.y, moved:true, onNode:true };
+  }
+}
+stage.addEventListener('pointerup', endPointer);
+stage.addEventListener('pointercancel', endPointer);
+function zoomBy(f){
+  const cx = stage.clientWidth/2, cy = stage.clientHeight/2, k2 = clampK(view.k * f);
+  view.x = cx - (cx - view.x) * (k2/view.k); view.y = cy - (cy - view.y) * (k2/view.k);
+  view.k = k2; applyView(); hideMenu();
+}
+$('zIn').onclick = () => zoomBy(1.3);
+$('zOut').onclick = () => zoomBy(1/1.3);
+stage.addEventListener('wheel', e => {
+  e.preventDefault();
+  const k2 = Math.min(2.5, Math.max(.25, view.k * (1 - e.deltaY * 0.0012)));
+  view.x = e.clientX - (e.clientX - view.x) * (k2/view.k);
+  view.y = e.clientY - (e.clientY - view.y) * (k2/view.k);
+  view.k = k2; applyView(); hideMenu();
+}, { passive:false });
+window.addEventListener('resize', () => S && fitView());
+
+/* ---------- Tooltip ---------- */
+function fillTip(p){
+  const P = S.people, tip = $('tip');
+  tip.innerHTML = '';
+  const b = document.createElement('b'); b.textContent = p.name; tip.appendChild(b);
+  const line = txt => { const d = document.createElement('div'); d.textContent = txt; tip.appendChild(d); };
+  if (p.father && p.mother) line(`${P[p.father].name}, ${P[p.mother].name} нарын ${p.gender === 'm' ? 'хүү' : 'охин'}`);
+  if (p.spouse) line(`${p.gender === 'm' ? 'Эхнэр' : 'Нөхөр'}: ${P[p.spouse].name}`);
+  const sibs = siblingsOf(p); if (sibs.length) line('Ах эгч дүү: ' + sibs.map(s => s.name).join(', '));
+  const kids = childrenOf(p); if (kids.length) line('Хүүхэд: ' + kids.map(s => s.name).join(', '));
+  tip.style.display = 'block';
+  return tip;
+}
+function showTip(p, e){            // mouse hover
+  const tip = fillTip(p);
+  tip.style.bottom = 'auto'; tip.style.transform = 'none'; tip.style.width = ''; tip.style.maxWidth = '';
+  tip.style.left = Math.min(e.clientX + 16, innerWidth - 300) + 'px';
+  tip.style.top = (e.clientY + 16) + 'px';
+}
+function showCard(p){              // tap / click: card at the bottom of the screen
+  const tip = fillTip(p);
+  tip.style.left = '50%'; tip.style.top = 'auto'; tip.style.bottom = '18px';
+  tip.style.transform = 'translateX(-50%)'; tip.style.width = 'min(92vw, 340px)';
+  tip.style.maxWidth = 'none';
+}
+function hideTip(){ const t = $('tip'); t.style.display = 'none'; t.style.width = ''; t.style.maxWidth = ''; }
+
+/* ---------- Action menu ---------- */
+function hideMenu(){ $('menu').style.display = 'none'; }
+function selectPerson(id, g){
+  selected = id; render(false);
+  showCard(S.people[id]);
+  if (!EDIT) return;
+  const node = vp.querySelector(`[data-id="${id}"]`);
+  const r = node.getBoundingClientRect(), p = S.people[id], m = $('menu');
+  m.innerHTML = '';
+  const add = (label, fn, cls) => {
+    const b = document.createElement('button'); b.textContent = label; if (cls) b.className = cls;
+    b.onclick = e => { e.stopPropagation(); hideMenu(); fn(); };
+    m.appendChild(b);
+  };
+  if (!p.father){ add('Аав нэмэх', () => addParent(p, 'm')); add('Ээж нэмэх', () => addParent(p, 'f')); }
+  add('Ах, эгч, дүү нэмэх', () => addSibling(p));
+  if (!p.spouse) add('Эхнэр / нөхөр нэмэх', () => addSpouse(p));
+  add('Хүүхэд нэмэх', () => addChild(p));
+  add('Засах', () => editPerson(p), 'edit');
+  if (p.id !== S.root) add('Устгах', () => deletePerson(p), 'del');
+  m.style.display = 'flex';
+  const mh = m.offsetHeight, mw = m.offsetWidth;
+  let left = r.right + 10; if (left + mw > innerWidth - 8) left = r.left - mw - 10;
+  m.style.left = Math.max(8, left) + 'px';
+  m.style.top = Math.min(Math.max(60, r.top), innerHeight - mh - 8) + 'px';
+  m.firstChild && m.firstChild.focus();
+}
+
+/* ---------- Dialog ---------- */
+function ask(o){
+  return new Promise(resolve => {
+    const dlg = $('dlg'), form = $('form');
+    let result = null;
+    $('dTitle').textContent = o.title;
+    $('dName').value = o.name || '';
+    $('gRow').style.display = o.showGender === false ? 'none' : '';
+    $('oRow').style.display = o.order ? '' : 'none';
+    $('dDel').style.display = o.canDelete ? '' : 'none';
+    form.querySelector(`input[name=g][value=${o.gender || 'm'}]`).checked = true;
+    form.querySelectorAll('input[name=g]').forEach(i => {
+      i.disabled = !!o.lockGender; i.parentElement.classList.toggle('dis', !!o.lockGender);
+    });
+    form.onsubmit = e => {
+      e.preventDefault();
+      const name = $('dName').value.trim();
+      if (!name){ $('dName').focus(); return; }
+      result = { name, gender: form.querySelector('input[name=g]:checked').value, older: $('dOrder').value === 'older' };
+      dlg.close();
+    };
+    $('dDel').onclick = () => { result = { del:true }; dlg.close(); };
+    $('dCancel').onclick = () => dlg.close();
+    dlg.onclose = () => resolve(result);
+    dlg.showModal(); $('dName').focus(); $('dName').select();
+  });
+}
+function toast(msg){
+  const t = $('toast'); t.textContent = msg; t.style.display = 'block';
+  clearTimeout(toast.t); toast.t = setTimeout(() => t.style.display = 'none', 2800);
+}
+function commit(){ save(); render(true); }
+
+/* ---------- Actions ---------- */
+function ensureParents(p){
+  if (p.father && p.mother) return;
+  const a = newPerson('Аав', 'm'), b = newPerson('Ээж', 'f');
+  marry(a, b); p.father = a.id; p.mother = b.id;
+}
+function ensureSpouse(p){
+  if (p.spouse) return S.people[p.spouse];
+  const s = newPerson(p.gender === 'm' ? 'Эхнэр' : 'Нөхөр', opposite(p.gender));
+  marry(p, s); return s;
+}
+
+async function addParent(p, g){
+  const r = await ask({ title: g === 'm' ? 'Аав нэмэх' : 'Ээж нэмэх', showGender:false });
+  if (!r) return;
+  const a = newPerson(r.name, g), b = newPerson(g === 'm' ? 'Ээж' : 'Аав', opposite(g));
+  marry(a, b);
+  p.father = (g === 'm' ? a : b).id; p.mother = (g === 'm' ? b : a).id;
+  commit();
+}
+async function addSibling(p){
+  const r = await ask({ title:'Ах, эгч, дүү нэмэх', order:true });
+  if (!r) return;
+  ensureParents(p);
+  const group = [p, ...siblingsOf(p)];
+  const s = newPerson(r.name, r.gender);
+  s.father = p.father; s.mother = p.mother;
+  s.ord = r.older ? Math.min(...group.map(x => x.ord)) - 1 : Math.max(...group.map(x => x.ord)) + 1;
+  commit();
+}
+async function addSpouse(p){
+  const g = opposite(p.gender);
+  const r = await ask({ title: g === 'f' ? 'Эхнэр нэмэх' : 'Нөхөр нэмэх', showGender:false });
+  if (!r) return;
+  marry(p, newPerson(r.name, g));
+  commit();
+}
+async function addChild(p){
+  const r = await ask({ title:'Хүүхэд нэмэх' });
+  if (!r) return;
+  const sp = ensureSpouse(p), c = newPerson(r.name, r.gender);
+  c.father = (p.gender === 'm' ? p : sp).id; c.mother = (p.gender === 'm' ? sp : p).id;
+  commit();
+}
+function deletePerson(p){
+  if (p.id === S.root) return toast('Өөрийгөө устгах боломжгүй');
+  // the person and all descendants
+  const set = new Set([p.id]), queue = [p];
+  while (queue.length){
+    const x = queue.shift();
+    childrenOf(x).forEach(c => { if (!set.has(c.id)){ set.add(c.id); queue.push(c); } });
+  }
+  if (set.has(S.root)) return toast('Таны өөрийн эцэг эхийг устгах боломжгүй, зөвхөн засаж болно');
+  // spouses who only joined the family by marriage
+  [...set].forEach(id => {
+    if (id === p.id) return;
+    const sp = S.people[id].spouse;
+    if (sp && sp !== S.root && !set.has(sp) && !S.people[sp].father) set.add(sp);
+  });
+  const msg = set.size > 1
+    ? `${p.name} болон түүний үр сад, нийт ${set.size} хүнийг устгах уу?`
+    : `${p.name}-г устгах уу?`;
+  if (!confirm(msg)) return;
+  set.forEach(id => { const sp = S.people[id].spouse; if (sp && !set.has(sp)) S.people[sp].spouse = null; });
+  set.forEach(id => delete S.people[id]);
+  selected = null; commit();
+}
+
+async function editPerson(p){
+  const hasKids = childrenOf(p).length > 0;
+  const canDelete = p.id !== S.root;
+  const r = await ask({ title:'Засах', name:p.name, gender:p.gender, order:false, canDelete, lockGender: hasKids || !!p.spouse });
+  if (!r) return;
+  if (r.del){ deletePerson(p); return; }
+  p.name = r.name; if (!(hasKids || p.spouse)) p.gender = r.gender;
+  commit();
+}
+
+/* ---------- Toolbar ---------- */
+async function start(){
+  const r = await ask({ title:'Таны мэдээлэл' });
+  if (!r) return;
+  S = { people:{}, root:1, next:1 };
+  const me = newPerson(r.name, r.gender); S.root = me.id; selected = null;
+  commit();
+}
+$('btnStart').onclick = start;
+$('btnFit').onclick = () => S && fitView();
+$('btnReset').onclick = () => {
+  if (S && !confirm(PUBLISHED ? 'Хадгалаагүй өөрчлөлтийг устгаад нийтлэгдсэн хувилбар руу буцах уу?' : 'Бүх мэдээллийг устгаад шинээр эхлэх уу?')) return;
+  S = PUBLISHED ? JSON.parse(JSON.stringify(PUBLISHED)) : null; selected = null;
+  try { localStorage.removeItem(KEY); } catch(e){}
+  render(true);
+};
+$('btnExport').onclick = () => {
+  if (!S) return toast('Хадгалах мэдээлэл алга');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(S, null, 2)], { type:'application/json' }));
+  a.download = 'tree.json'; a.click(); URL.revokeObjectURL(a.href);
+  toast('tree.json-г repo-доо солиод push хийвэл сайт шинэчлэгдэнэ');
+};
+$('btnImport').onclick = () => $('file').click();
+$('file').onchange = e => {
+  const f = e.target.files[0]; if (!f) return;
+  const rd = new FileReader();
+  rd.onload = () => {
+    try {
+      const s = JSON.parse(rd.result);
+      if (!s.people || !s.root || !s.people[s.root]) throw 0;
+      S = s; selected = null; commit();
+    } catch(err){ toast('Файл буруу байна'); }
+  };
+  rd.readAsText(f); e.target.value = '';
+};
+document.addEventListener('keydown', e => { if (e.key === 'Escape') hideMenu(); });
+
+async function init(){
+  try {
+    const r = await fetch('tree.json?' + Date.now(), { cache:'no-store' });
+    if (r.ok){ const j = await r.json(); if (j && j.people && j.root && j.people[j.root]) PUBLISHED = j; }
+  } catch(e){}
+  if (EDIT){
+    S = load() || (PUBLISHED ? JSON.parse(JSON.stringify(PUBLISHED)) : null);
+    document.querySelector('header h1').textContent = 'Удмын мод — засварлах горим';
+    if (PUBLISHED) $('btnReset').textContent = 'Нийтлэгдсэн рүү буцах';
+  } else {
+    S = PUBLISHED;
+    ['btnExport','btnImport','btnReset'].forEach(id => $(id).hidden = true);
+    $('empty').querySelector('h2').textContent = 'Мод хараахан нийтлэгдээгүй';
+    $('empty').querySelector('p').textContent = 'tree.json файл олдсонгүй.';
+    $('btnStart').hidden = true;
+  }
+  render(true);
+}
+init();
+})();
+</script>
+</body>
+</html>
