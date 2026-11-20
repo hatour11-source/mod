@@ -122,7 +122,9 @@ const KEY = 'udmiin-mod.v1';
 const NS = 'http://www.w3.org/2000/svg';
 
 /* ---------- State ---------- */
-let S = load();            // { people:{id:{...}}, root:id, next:n }
+const EDIT = new URLSearchParams(location.search).has('edit');   // засварлах горим: ?edit
+let PUBLISHED = null;      // tree.json дахь нийтлэгдсэн мод
+let S = null;              // { people:{id:{...}}, root:id, next:n }
 let selected = null;
 const view = { x: 0, y: 0, k: 1 };
 let maxLevel = 0, levelTop = [], focusX = 0;
@@ -134,7 +136,7 @@ function load(){
   try { const s = JSON.parse(localStorage.getItem(KEY)); if (s && s.people && s.root) return s; } catch(e){}
   return null;
 }
-function save(){ try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e){} }
+function save(){ if (!EDIT) return; try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e){} }
 
 function newPerson(name, gender){
   const id = S.next++;
@@ -400,6 +402,7 @@ function hideTip(){ $('tip').style.display = 'none'; }
 function hideMenu(){ $('menu').style.display = 'none'; }
 function selectPerson(id, g){
   selected = id; render(false);
+  if (!EDIT) return;
   const node = vp.querySelector(`[data-id="${id}"]`);
   const r = node.getBoundingClientRect(), p = S.people[id], m = $('menu');
   m.innerHTML = '';
@@ -544,15 +547,17 @@ async function start(){
 $('btnStart').onclick = start;
 $('btnFit').onclick = () => S && fitView();
 $('btnReset').onclick = () => {
-  if (S && !confirm('Бүх мэдээллийг устгаад шинээр эхлэх үү?')) return;
-  S = null; selected = null; try { localStorage.removeItem(KEY); } catch(e){}
-  render(false);
+  if (S && !confirm(PUBLISHED ? 'Хадгалаагүй өөрчлөлтийг устгаад нийтлэгдсэн хувилбар руу буцах уу?' : 'Бүх мэдээллийг устгаад шинээр эхлэх уу?')) return;
+  S = PUBLISHED ? JSON.parse(JSON.stringify(PUBLISHED)) : null; selected = null;
+  try { localStorage.removeItem(KEY); } catch(e){}
+  render(true);
 };
 $('btnExport').onclick = () => {
   if (!S) return toast('Хадгалах мэдээлэл алга');
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([JSON.stringify(S, null, 2)], { type:'application/json' }));
-  a.download = 'udmiin-mod.json'; a.click(); URL.revokeObjectURL(a.href);
+  a.download = 'tree.json'; a.click(); URL.revokeObjectURL(a.href);
+  toast('tree.json-г repo-доо солиод push хийвэл сайт шинэчлэгдэнэ');
 };
 $('btnImport').onclick = () => $('file').click();
 $('file').onchange = e => {
@@ -569,7 +574,25 @@ $('file').onchange = e => {
 };
 document.addEventListener('keydown', e => { if (e.key === 'Escape') hideMenu(); });
 
-render(true);
+async function init(){
+  try {
+    const r = await fetch('tree.json?' + Date.now(), { cache:'no-store' });
+    if (r.ok){ const j = await r.json(); if (j && j.people && j.root && j.people[j.root]) PUBLISHED = j; }
+  } catch(e){}
+  if (EDIT){
+    S = load() || (PUBLISHED ? JSON.parse(JSON.stringify(PUBLISHED)) : null);
+    document.querySelector('header h1').textContent = 'Удмын мод — засварлах горим';
+    if (PUBLISHED) $('btnReset').textContent = 'Нийтлэгдсэн рүү буцах';
+  } else {
+    S = PUBLISHED;
+    ['btnExport','btnImport','btnReset'].forEach(id => $(id).hidden = true);
+    $('empty').querySelector('h2').textContent = 'Мод хараахан нийтлэгдээгүй';
+    $('empty').querySelector('p').textContent = 'tree.json файл олдсонгүй.';
+    $('btnStart').hidden = true;
+  }
+  render(true);
+}
+init();
 })();
 </script>
 </body>
