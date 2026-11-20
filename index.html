@@ -135,6 +135,7 @@ let S = null;              // { people:{id:{...}}, root:id, next:n }
 let selected = null;
 const view = { x: 0, y: 0, k: 1 };
 let maxLevel = 0, levelTop = [], focusX = 0;
+let tempDX = {};           // зөөх үеийн түр шилжилт {id: dx}
 
 const $ = id => document.getElementById(id);
 const stage = $('stage'), vp = $('vp'), bands = $('bands');
@@ -244,7 +245,7 @@ function layout(){
   // person positions
   const pos = {};
   units.forEach(u => u.ids.forEach((id,i) => {
-    pos[id] = { x: u.x + (i - (u.ids.length-1)/2) * SLOT, y: TOP + u.level * LEVEL_GAP };
+    pos[id] = { x: u.x + (i - (u.ids.length-1)/2) * SLOT + (tempDX[id] || 0), y: TOP + u.level * LEVEL_GAP };
   }));
   // focus: the root's parents (or the root itself) are kept in the middle of the view
   const fu = P[S.root].father ? unitOf[P[S.root].father] : unitOf[S.root];
@@ -307,20 +308,21 @@ function render(fit){
   units.forEach(u => {
     const y0 = pos[u.ids[0]].y;
     const dotY = y0 + 138, startY = y0 + 116;
+    const ux = u.ids.reduce((a,id) => a + pos[id].x, 0) / u.ids.length;
     if (u.ids.length === 2){
       u.ids.forEach(id => {
         const x = pos[id].x, mid = (startY + dotY)/2;
-        el('path', { d:`M${x},${startY} C${x},${mid} ${u.x},${mid} ${u.x},${dotY}`, fill:'none',
+        el('path', { d:`M${x},${startY} C${x},${mid} ${ux},${mid} ${ux},${dotY}`, fill:'none',
           stroke:'#e0393e', 'stroke-width':3.2, 'stroke-linecap':'round' }, edges);
       });
-      el('rect', { x:u.x-5, y:dotY-5, width:10, height:10, rx:3, fill:'#e0393e' }, edges);
+      el('rect', { x:ux-5, y:dotY-5, width:10, height:10, rx:3, fill:'#e0393e' }, edges);
     }
     u.kids.forEach(ku => ku.ids.forEach(id => {
       const c = P[id];
       if (!(u.ids.includes(c.father) && u.ids.includes(c.mother))) return;
       const cx = pos[id].x, top = pos[id].y - 6, mid = (dotY + top)/2;
       const red = blood.has(id);
-      el('path', { d:`M${u.x},${dotY} C${u.x},${mid} ${cx},${mid} ${cx},${top}`, fill:'none',
+      el('path', { d:`M${ux},${dotY} C${ux},${mid} ${cx},${mid} ${cx},${top}`, fill:'none',
         stroke: red ? '#e0393e' : '#a0a7b4', 'stroke-width': red ? 3.2 : 2, 'stroke-linecap':'round' }, edges);
     }));
   });
@@ -371,8 +373,12 @@ const clampK = k => Math.min(2.5, Math.max(.2, k));
 stage.addEventListener('pointerdown', e => {
   ptrs.set(e.pointerId, { x:e.clientX, y:e.clientY });
   if (ptrs.size === 1){
-    gesture = { mode:'pan', x:e.clientX, y:e.clientY, vx:view.x, vy:view.y, moved:false, onNode: !!e.target.closest('.node') };
+    const nodeEl = EDIT ? e.target.closest('.node') : null;
+    gesture = nodeEl
+      ? { mode:'node', id:Number(nodeEl.dataset.id), x:e.clientX, y:e.clientY, moved:false, onNode:true }
+      : { mode:'pan', x:e.clientX, y:e.clientY, vx:view.x, vy:view.y, moved:false, onNode: !!e.target.closest('.node') };
   } else if (ptrs.size === 2){
+    if (Object.keys(tempDX).length){ tempDX = {}; render(false); }
     const [a,b] = [...ptrs.values()];
     gesture = { mode:'pinch', d:dist(a,b), cx:(a.x+b.x)/2, cy:(a.y+b.y)/2, k:view.k, vx:view.x, vy:view.y, moved:true, onNode:true };
     hideMenu(); hideTip();
@@ -389,6 +395,18 @@ stage.addEventListener('pointermove', e => {
       try { stage.setPointerCapture(e.pointerId); } catch(err){}
     }
     if (gesture.moved){ view.x = gesture.vx + dx; view.y = gesture.vy + dy; applyView(); }
+  } else if (gesture.mode === 'node' && ptrs.size === 1){
+    const dx = e.clientX - gesture.x, dy = e.clientY - gesture.y;
+    if (!gesture.moved && Math.abs(dx) + Math.abs(dy) > 8){
+      gesture.moved = true; stage.classList.add('drag'); hideMenu(); hideTip();
+      gesture.group = groupOf(S.people[gesture.id]);
+      try { stage.setPointerCapture(e.pointerId); } catch(err){}
+    }
+    if (gesture.moved){
+      const d = dx / view.k;
+      tempDX = {}; gesture.group.forEach(id => tempDX[id] = d);
+      render(false);
+    }
   } else if (gesture.mode === 'pinch' && ptrs.size === 2){
     const [a,b] = [...ptrs.values()];
     const cx = (a.x+b.x)/2, cy = (a.y+b.y)/2;
@@ -401,6 +419,9 @@ function endPointer(e){
   if (!ptrs.has(e.pointerId)) return;
   ptrs.delete(e.pointerId);
   if (gesture){
+    if (gesture.mode === 'node' && gesture.moved && ptrs.size === 0){
+      if (e.type === 'pointerup') finishNodeDrag(e); else { tempDX = {}; render(false); }
+    }
     if (gesture.moved){ suppressClick = true; setTimeout(() => suppressClick = false, 350); }
     else if (gesture.mode === 'pan' && !gesture.onNode && e.type === 'pointerup'){
       selected = null; hideMenu(); hideTip(); if (S) render(false);
@@ -414,6 +435,32 @@ function endPointer(e){
 }
 stage.addEventListener('pointerup', endPointer);
 stage.addEventListener('pointercancel', endPointer);
+function groupOf(p){              // хүн + эхнэр/нөхөр + бүх үр сад (тэдний хань нартай)
+  const set = new Set([p.id]), queue = [p];
+  if (p.spouse) set.add(p.spouse);
+  while (queue.length){
+    const x = queue.shift();
+    childrenOf(x).forEach(c => {
+      if (set.has(c.id)) return;
+      set.add(c.id); queue.push(c);
+      if (c.spouse) set.add(c.spouse);
+    });
+  }
+  return [...set];
+}
+function finishNodeDrag(e){
+  const p = S.people[gesture.id];
+  const delta = (e.clientX - gesture.x) / view.k;
+  tempDX = {};
+  if (!p){ render(false); return; }
+  const sibs = siblingsOf(p);
+  if (!sibs.length){ render(false); toast('Ах, эгч, дүү байхгүй хүнийг зөөж байр солих боломжгүй'); return; }
+  const { pos } = layout();
+  const items = [p, ...sibs].map(x => ({ x, px: pos[x.id].x + (x.id === p.id ? delta : 0) }));
+  items.sort((a,b) => a.px - b.px);
+  items.forEach((it,i) => it.x.ord = i + 1);
+  save(); render(false);
+}
 function zoomBy(f){
   const cx = stage.clientWidth/2, cy = stage.clientHeight/2, k2 = clampK(view.k * f);
   view.x = cx - (cx - view.x) * (k2/view.k); view.y = cy - (cy - view.y) * (k2/view.k);
