@@ -1,0 +1,708 @@
+{
+  "people": {
+    "1": {
+      "id": 1,
+      "name": "Одонтуяа",
+      "gender": "f",
+      "father": 2,
+      "mother": 3,
+      "spouse": null,
+      "ord": 1
+    },
+    "2": {
+      "id": 2,
+      "name": "Зориг",
+      "gender": "m",
+      "father": 9,
+      "mother": 10,
+      "spouse": 3,
+      "ord": 2
+    },
+    "3": {
+      "id": 3,
+      "name": "Наранчимэг",
+      "gender": "f",
+      "father": 5,
+      "mother": 6,
+      "spouse": 2,
+      "ord": 3
+    },
+    "4": {
+      "id": 4,
+      "name": "Мөнх-Амар",
+      "gender": "m",
+      "father": 2,
+      "mother": 3,
+      "spouse": 12,
+      "ord": 4
+    },
+    "5": {
+      "id": 5,
+      "name": "Батмөнх",
+      "gender": "m",
+      "father": null,
+      "mother": null,
+      "spouse": 6,
+      "ord": 5
+    },
+    "6": {
+      "id": 6,
+      "name": "Ээж",
+      "gender": "f",
+      "father": null,
+      "mother": null,
+      "spouse": 5,
+      "ord": 6
+    },
+    "8": {
+      "id": 8,
+      "name": "Чойжил",
+      "gender": "m",
+      "father": 2,
+      "mother": 3,
+      "spouse": 11,
+      "ord": 8
+    },
+    "9": {
+      "id": 9,
+      "name": "Доёдаваа",
+      "gender": "m",
+      "father": null,
+      "mother": null,
+      "spouse": 10,
+      "ord": 9
+    },
+    "10": {
+      "id": 10,
+      "name": "Цогзолмаа",
+      "gender": "f",
+      "father": null,
+      "mother": null,
+      "spouse": 9,
+      "ord": 10
+    },
+    "11": {
+      "id": 11,
+      "name": "Батцагаан",
+      "gender": "f",
+      "father": null,
+      "mother": null,
+      "spouse": 8,
+      "ord": 11
+    },
+    "12": {
+      "id": 12,
+      "name": "Мөнхцэцэг",
+      "gender": "f",
+      "father": null,
+      "mother": null,
+      "spouse": 4,
+      "ord": 12
+    },
+    "13": {
+      "id": 13,
+      "name": "Хангэрэл",
+      "gender": "m",
+      "father": 8,
+      "mother": 11,
+      "spouse": null,
+      "ord": 13
+    },
+    "14": {
+      "id": 14,
+      "name": "Ариунгэрэл",
+      "gender": "f",
+      "father": 8,
+      "mother": 11,
+      "spouse": null,
+      "ord": 14
+    },
+    "15": {
+      "id": 15,
+      "name": "Билигжамц",
+      "gender": "m",
+      "father": 4,
+      "mother": 12,
+      "spouse": null,
+      "ord": 15
+    },
+    "16": {
+      "id": 16,
+      "name": "Хишиг",
+      "gender": "f",
+      "father": 4,
+      "mother": 12,
+      "spouse": null,
+      "ord": 16
+    },
+    "17": {
+      "id": 17,
+      "name": "Болдбаатар",
+      "gender": "m",
+      "father": 9,
+      "mother": 10,
+      "spouse": 41,
+      "ord": 17
+    },
+    "18": {
+      "id": 18,
+      "name": "Жанчивдорж",
+      "gender": "m",
+      "father": 9,
+      "mother": 10,
+      "spouse": 42,
+      "ord": 18
+    },
+    "19": {
+      "id": 19,
+      "name": "Цэрэннадмид",
+      "gender": "f",
+      "father": 9,
+      "mother": 10,
+      "spouse": 59,
+      "ord": 1
+    },
+    "21": {
+      "id": 21,
+      "name": "Санжаа",
+      "gender": "m",
+      "father": 9,
+      "mother": 10,
+      "spouse": 43,
+      "ord": 21
+    },
+    "22": {
+      "id": 22,
+      "name": "Адьяа",
+      "gender": "f",
+      "father": 9,
+      "mother": 10,
+      "spouse": 56,
+      "ord": 22
+    },
+    "23": {
+      "id": 23,
+      "name": "Нэргүй",
+      "gender": "m",
+      "father": 9,
+      "mother": 10,
+      "spouse": 44,
+      "ord": 23
+    },
+    "24": {
+      "id": 24,
+      "name": "Цэрэндолгор",
+      "gender": "f",
+      "father": 9,
+      "mother": 10,
+      "spouse": 49,
+      "ord": 24
+    },
+    "25": {
+      "id": 25,
+      "name": "Цэрэнлхам",
+      "gender": "f",
+      "father": 9,
+      "mother": 10,
+      "spouse": null,
+      "ord": 25
+    },
+    "26": {
+      "id": 26,
+      "name": "Батзориг",
+      "gender": "m",
+      "father": 9,
+      "mother": 10,
+      "spouse": 60,
+      "ord": 26
+    },
+    "27": {
+      "id": 27,
+      "name": "Нямдаваа",
+      "gender": "m",
+      "father": 5,
+      "mother": 6,
+      "spouse": 36,
+      "ord": 27
+    },
+    "28": {
+      "id": 28,
+      "name": "Нямжав",
+      "gender": "m",
+      "father": 5,
+      "mother": 6,
+      "spouse": 37,
+      "ord": 28
+    },
+    "29": {
+      "id": 29,
+      "name": "Нямсүрэн",
+      "gender": "m",
+      "father": 5,
+      "mother": 6,
+      "spouse": 38,
+      "ord": 29
+    },
+    "30": {
+      "id": 30,
+      "name": "Эрдэнэчимэг",
+      "gender": "f",
+      "father": 5,
+      "mother": 6,
+      "spouse": 79,
+      "ord": 30
+    },
+    "31": {
+      "id": 31,
+      "name": "Дуламсүрэн",
+      "gender": "f",
+      "father": 5,
+      "mother": 6,
+      "spouse": 39,
+      "ord": 31
+    },
+    "32": {
+      "id": 32,
+      "name": "Бямбаа",
+      "gender": "f",
+      "father": 5,
+      "mother": 6,
+      "spouse": null,
+      "ord": 32
+    },
+    "33": {
+      "id": 33,
+      "name": "Бямбахишиг",
+      "gender": "f",
+      "father": 5,
+      "mother": 6,
+      "spouse": null,
+      "ord": 33
+    },
+    "34": {
+      "id": 34,
+      "name": "Ганхуяг",
+      "gender": "m",
+      "father": 5,
+      "mother": 6,
+      "spouse": 74,
+      "ord": 34
+    },
+    "35": {
+      "id": 35,
+      "name": "Отгонжаргал",
+      "gender": "f",
+      "father": 5,
+      "mother": 6,
+      "spouse": 40,
+      "ord": 35
+    },
+    "36": {
+      "id": 36,
+      "name": "Сүрэнжав",
+      "gender": "f",
+      "father": null,
+      "mother": null,
+      "spouse": 27,
+      "ord": 36
+    },
+    "37": {
+      "id": 37,
+      "name": "Алтанцэцэг",
+      "gender": "f",
+      "father": null,
+      "mother": null,
+      "spouse": 28,
+      "ord": 37
+    },
+    "38": {
+      "id": 38,
+      "name": "Эрдэнэбат",
+      "gender": "f",
+      "father": null,
+      "mother": null,
+      "spouse": 29,
+      "ord": 38
+    },
+    "39": {
+      "id": 39,
+      "name": "Баасангэрэл",
+      "gender": "m",
+      "father": null,
+      "mother": null,
+      "spouse": 31,
+      "ord": 39
+    },
+    "40": {
+      "id": 40,
+      "name": "Нэргүй",
+      "gender": "m",
+      "father": null,
+      "mother": null,
+      "spouse": 35,
+      "ord": 40
+    },
+    "41": {
+      "id": 41,
+      "name": "Баянжаргал",
+      "gender": "f",
+      "father": null,
+      "mother": null,
+      "spouse": 17,
+      "ord": 41
+    },
+    "42": {
+      "id": 42,
+      "name": "Лхагвасүрэн",
+      "gender": "f",
+      "father": null,
+      "mother": null,
+      "spouse": 18,
+      "ord": 42
+    },
+    "43": {
+      "id": 43,
+      "name": "Бямба-Өлзий",
+      "gender": "f",
+      "father": null,
+      "mother": null,
+      "spouse": 21,
+      "ord": 43
+    },
+    "44": {
+      "id": 44,
+      "name": "Дашдулам",
+      "gender": "f",
+      "father": null,
+      "mother": null,
+      "spouse": 23,
+      "ord": 44
+    },
+    "45": {
+      "id": 45,
+      "name": "Даваадорж",
+      "gender": "m",
+      "father": 21,
+      "mother": 43,
+      "spouse": null,
+      "ord": 45
+    },
+    "46": {
+      "id": 46,
+      "name": "Пүрэвдорж",
+      "gender": "m",
+      "father": 21,
+      "mother": 43,
+      "spouse": null,
+      "ord": 46
+    },
+    "47": {
+      "id": 47,
+      "name": "Ариунжаргал",
+      "gender": "f",
+      "father": 21,
+      "mother": 43,
+      "spouse": null,
+      "ord": 47
+    },
+    "48": {
+      "id": 48,
+      "name": "Бямбадорж",
+      "gender": "m",
+      "father": 21,
+      "mother": 43,
+      "spouse": null,
+      "ord": 48
+    },
+    "49": {
+      "id": 49,
+      "name": "Батзориг",
+      "gender": "m",
+      "father": null,
+      "mother": null,
+      "spouse": 24,
+      "ord": 49
+    },
+    "50": {
+      "id": 50,
+      "name": "Шагж",
+      "gender": "f",
+      "father": 49,
+      "mother": 24,
+      "spouse": null,
+      "ord": 50
+    },
+    "51": {
+      "id": 51,
+      "name": "Даваасамбуу",
+      "gender": "m",
+      "father": 49,
+      "mother": 24,
+      "spouse": null,
+      "ord": 51
+    },
+    "52": {
+      "id": 52,
+      "name": "Гандиймаа",
+      "gender": "f",
+      "father": 49,
+      "mother": 24,
+      "spouse": null,
+      "ord": 52
+    },
+    "53": {
+      "id": 53,
+      "name": "Хандсүрэн",
+      "gender": "f",
+      "father": 23,
+      "mother": 44,
+      "spouse": null,
+      "ord": 53
+    },
+    "54": {
+      "id": 54,
+      "name": "Дагвадорж",
+      "gender": "m",
+      "father": 23,
+      "mother": 44,
+      "spouse": null,
+      "ord": 54
+    },
+    "55": {
+      "id": 55,
+      "name": "Дашдорж",
+      "gender": "m",
+      "father": 23,
+      "mother": 44,
+      "spouse": null,
+      "ord": 55
+    },
+    "56": {
+      "id": 56,
+      "name": "Болдоо",
+      "gender": "m",
+      "father": null,
+      "mother": null,
+      "spouse": 22,
+      "ord": 56
+    },
+    "57": {
+      "id": 57,
+      "name": "Нямбаяр",
+      "gender": "m",
+      "father": 56,
+      "mother": 22,
+      "spouse": null,
+      "ord": 57
+    },
+    "58": {
+      "id": 58,
+      "name": "Нэмэхжаргал",
+      "gender": "f",
+      "father": 56,
+      "mother": 22,
+      "spouse": null,
+      "ord": 58
+    },
+    "59": {
+      "id": 59,
+      "name": "Мөнхөө",
+      "gender": "m",
+      "father": null,
+      "mother": null,
+      "spouse": 19,
+      "ord": 59
+    },
+    "60": {
+      "id": 60,
+      "name": "Цагаанаа",
+      "gender": "f",
+      "father": null,
+      "mother": null,
+      "spouse": 26,
+      "ord": 60
+    },
+    "61": {
+      "id": 61,
+      "name": "Баасандлгор",
+      "gender": "f",
+      "father": 26,
+      "mother": 60,
+      "spouse": null,
+      "ord": 61
+    },
+    "62": {
+      "id": 62,
+      "name": "Алтанзагас",
+      "gender": "f",
+      "father": 28,
+      "mother": 37,
+      "spouse": null,
+      "ord": 62
+    },
+    "63": {
+      "id": 63,
+      "name": "Галбадрах",
+      "gender": "f",
+      "father": 28,
+      "mother": 37,
+      "spouse": 66,
+      "ord": 63
+    },
+    "64": {
+      "id": 64,
+      "name": "Гүнсэлмаа",
+      "gender": "f",
+      "father": 28,
+      "mother": 37,
+      "spouse": null,
+      "ord": 64
+    },
+    "65": {
+      "id": 65,
+      "name": "Буяндэлгэр",
+      "gender": "m",
+      "father": 28,
+      "mother": 37,
+      "spouse": null,
+      "ord": 65
+    },
+    "66": {
+      "id": 66,
+      "name": "Батдэлгэр",
+      "gender": "m",
+      "father": null,
+      "mother": null,
+      "spouse": 63,
+      "ord": 66
+    },
+    "67": {
+      "id": 67,
+      "name": "Анхбаатар",
+      "gender": "m",
+      "father": 29,
+      "mother": 38,
+      "spouse": null,
+      "ord": 67
+    },
+    "68": {
+      "id": 68,
+      "name": "Батбаатар",
+      "gender": "m",
+      "father": 29,
+      "mother": 38,
+      "spouse": null,
+      "ord": 68
+    },
+    "69": {
+      "id": 69,
+      "name": "Отгонбаатар",
+      "gender": "m",
+      "father": 29,
+      "mother": 38,
+      "spouse": null,
+      "ord": 69
+    },
+    "70": {
+      "id": 70,
+      "name": "Дарханбаатар",
+      "gender": "m",
+      "father": 29,
+      "mother": 38,
+      "spouse": null,
+      "ord": 70
+    },
+    "71": {
+      "id": 71,
+      "name": "Анхбаяр",
+      "gender": "m",
+      "father": 40,
+      "mother": 35,
+      "spouse": null,
+      "ord": 71
+    },
+    "72": {
+      "id": 72,
+      "name": "Анхтуяа",
+      "gender": "f",
+      "father": 40,
+      "mother": 35,
+      "spouse": null,
+      "ord": 72
+    },
+    "73": {
+      "id": 73,
+      "name": "Буянбат",
+      "gender": "m",
+      "father": 40,
+      "mother": 35,
+      "spouse": null,
+      "ord": 73
+    },
+    "74": {
+      "id": 74,
+      "name": "Эхнэр",
+      "gender": "f",
+      "father": null,
+      "mother": null,
+      "spouse": 34,
+      "ord": 74
+    },
+    "75": {
+      "id": 75,
+      "name": "Ууганбаатар",
+      "gender": "m",
+      "father": 34,
+      "mother": 74,
+      "spouse": null,
+      "ord": 75
+    },
+    "76": {
+      "id": 76,
+      "name": "Шарав",
+      "gender": "m",
+      "father": 34,
+      "mother": 74,
+      "spouse": null,
+      "ord": 76
+    },
+    "77": {
+      "id": 77,
+      "name": "Нямсүрэн",
+      "gender": "f",
+      "father": 34,
+      "mother": 74,
+      "spouse": null,
+      "ord": 77
+    },
+    "78": {
+      "id": 78,
+      "name": "Үүлэнсолонго",
+      "gender": "f",
+      "father": 34,
+      "mother": 74,
+      "spouse": null,
+      "ord": 78
+    },
+    "79": {
+      "id": 79,
+      "name": "Нөхөр",
+      "gender": "m",
+      "father": null,
+      "mother": null,
+      "spouse": 30,
+      "ord": 79
+    },
+    "80": {
+      "id": 80,
+      "name": "Цогзолмаа",
+      "gender": "f",
+      "father": 79,
+      "mother": 30,
+      "spouse": null,
+      "ord": 80
+    }
+  },
+  "root": 1,
+  "next": 81
+}
