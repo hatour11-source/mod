@@ -37,6 +37,8 @@
     padding:7px 14px;cursor:pointer;text-align:left;box-shadow:0 3px 10px rgba(20,40,100,.25);white-space:nowrap}
   #menu button:hover{background:#1b46b3}
   #menu button.edit{background:#3a4660}
+  #menu button.photo{background:#2a8a5a}
+  #menu button.photo:hover{background:#207049}
   #menu button.del{background:#c0332f}
   #menu button.del:hover{background:#a02622}
   #tip{position:fixed;z-index:15;display:none;pointer-events:none;background:var(--card);color:#e8edf7;border-radius:8px;
@@ -61,6 +63,15 @@
   .actions button{font:inherit;font-size:14px;padding:8px 16px;border-radius:8px;border:1px solid #c5cddb;background:#fff;cursor:pointer}
   .actions .ok{background:var(--blue);border-color:var(--blue);color:#fff;font-weight:600}
   .actions .del{color:#b3261e;border-color:#e9b8b4}
+  /* зураг оруулах */
+  .phrow{display:flex;flex-direction:column;align-items:center;gap:4px;margin-bottom:4px}
+  .phrow small{color:var(--muted);font-size:12px}
+  .ph{width:92px;height:92px;border-radius:50%;border:2px dashed #9fb2d8;background:#f2f5fb;padding:0;cursor:pointer;overflow:hidden;position:relative}
+  .ph:hover{border-color:var(--blue)}
+  .ph img{width:100%;height:100%;object-fit:cover;display:block}
+  .ph svg{width:100%;height:100%;display:block}
+  .ph .cam{position:absolute;left:0;right:0;bottom:0;height:26px;background:rgba(27,36,56,.62);color:#fff;font-size:11px;display:flex;align-items:center;justify-content:center}
+  .phrow .lnk{border:0;background:none;color:#b3261e;font:inherit;font-size:12px;cursor:pointer;padding:2px 6px}
 </style>
 </head>
 <body>
@@ -87,10 +98,17 @@
 <div id="menu"></div>
 <div id="tip"></div>
 <div id="toast"></div>
+<input type="file" id="photoFile" accept="image/*" hidden>
+<input type="file" id="quickFile" accept="image/*" hidden>
 
 <dialog id="dlg">
   <form id="form" method="dialog">
     <h3 id="dTitle"></h3>
+    <div class="phrow">
+      <button type="button" class="ph" id="dPhoto" aria-label="Зураг оруулах"></button>
+      <small>Дүр дээр дарж зураг оруулна</small>
+      <button type="button" class="lnk" id="dPhotoDel">Зургийг арилгах</button>
+    </div>
     <label class="f" for="dName">Нэр</label>
     <input type="text" id="dName" autocomplete="off" maxlength="40">
     <div id="gRow">
@@ -127,6 +145,7 @@ const LEVEL_GAP = 240;     // vertical distance between generations
 const TOP = 90;            // y of first generation
 const KEY = 'udmiin-mod.v1';
 const NS = 'http://www.w3.org/2000/svg';
+const PHOTO_SIZE = 200;    // зургийн хэмжээ (px) — JSON жижиг байлгахын тулд багасгана
 
 /* ---------- State ---------- */
 const EDIT = new URLSearchParams(location.search).has('edit');   // засварлах горим: ?edit
@@ -144,7 +163,11 @@ function load(){
   try { const s = JSON.parse(localStorage.getItem(KEY)); if (s && s.people && s.root) return s; } catch(e){}
   return null;
 }
-function save(){ if (!EDIT) return; try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e){} }
+function save(){
+  if (!EDIT) return;
+  try { localStorage.setItem(KEY, JSON.stringify(S)); }
+  catch(e){ toast('Хадгалах зай дүүрсэн байна — JSON хадгалах товчийг ашиглана уу'); }
+}
 
 function newPerson(name, gender){
   const id = S.next++;
@@ -156,6 +179,27 @@ const marry = (a,b) => { a.spouse = b.id; b.spouse = a.id; };
 const childrenOf = p => all().filter(c => c.father === p.id || c.mother === p.id);
 const siblingsOf = p => (p.father && p.mother)
   ? all().filter(c => c.id !== p.id && c.father === p.father && c.mother === p.mother).sort((a,b)=>a.ord-b.ord) : [];
+
+/* ---------- Photo helper: файлыг тойруулж төвөөс нь хайчлаад жижигрүүлнэ ---------- */
+function fileToPhoto(file){
+  return new Promise((resolve, reject) => {
+    const fr = new FileReader();
+    fr.onerror = reject;
+    fr.onload = () => {
+      const im = new Image();
+      im.onerror = reject;
+      im.onload = () => {
+        const c = document.createElement('canvas');
+        c.width = c.height = PHOTO_SIZE;
+        const s = Math.min(im.width, im.height);
+        c.getContext('2d').drawImage(im, (im.width - s)/2, (im.height - s)/2, s, s, 0, 0, PHOTO_SIZE, PHOTO_SIZE);
+        resolve(c.toDataURL('image/jpeg', 0.82));
+      };
+      im.src = fr.result;
+    };
+    fr.readAsDataURL(file);
+  });
+}
 
 /* ---------- Layout ---------- */
 function layout(){
@@ -260,8 +304,21 @@ function el(tag, attrs, parent){
   return e;
 }
 
-function drawAvatar(parent, gender){
+function drawAvatar(parent, gender, p){
   const a = el('g', { class:'avatar' }, parent);
+
+  // зурагтай бол дугуй зураг
+  if (p && p.photo){
+    const cid = 'clip' + p.id;
+    const cp = el('clipPath', { id:cid }, a);
+    el('circle', { cx:28, cy:46, r:30 }, cp);
+    const img = el('image', { x:-2, y:16, width:60, height:60, preserveAspectRatio:'xMidYMid slice', 'clip-path':`url(#${cid})` }, a);
+    img.setAttribute('href', p.photo);
+    el('circle', { cx:28, cy:46, r:30, fill:'none', stroke: gender === 'm' ? '#3b6fd4' : '#b5483c', 'stroke-width':3 }, a);
+    el('ellipse', { cx:28, cy:86, rx:21, ry:5, fill:'#dfe7f7', stroke:'#3b6fd4', 'stroke-width':3 }, a);
+    return;
+  }
+
   el('ellipse', { cx:28, cy:86, rx:21, ry:5, fill:'#dfe7f7', stroke:'#3b6fd4', 'stroke-width':3 }, a);
   if (gender === 'm'){
     el('rect', { x:10, y:38, width:36, height:46, rx:9, fill:'#1f3358' }, a);
@@ -331,7 +388,7 @@ function render(fit){
     const ps = pos[p.id]; if (!ps) return;
     const g = el('g', { class:'node', transform:`translate(${ps.x-28},${ps.y})`, 'data-id':p.id, tabindex:0 }, nodes);
     if (p.id === selected) el('circle', { cx:28, cy:52, r:52, fill:'none', stroke:'#9ca3af', 'stroke-width':7, opacity:.75 }, g);
-    drawAvatar(g, p.gender);
+    drawAvatar(g, p.gender, p);
     if (p.id === S.root) el('polygon', { points:starPoints(28,-10,15,6.5), fill:'#f08a4b', stroke:'#fff', 'stroke-width':2 }, g);
     const t = el('text', { class:'label', x:28, y:108 }, g); t.textContent = p.name;
     if (p.id === S.root) t.setAttribute('font-weight', '700');
@@ -518,6 +575,7 @@ function selectPerson(id, g){
     b.onclick = e => { e.stopPropagation(); hideMenu(); fn(); };
     m.appendChild(b);
   };
+  add(p.photo ? 'Зураг солих' : 'Зураг оруулах', () => quickPhoto(p), 'photo');
   if (!p.father){ add('Аав нэмэх', () => addParent(p, 'm')); add('Ээж нэмэх', () => addParent(p, 'f')); }
   add('Ах, эгч, дүү нэмэх', () => addSibling(p));
   if (!p.spouse) add('Эхнэр / нөхөр нэмэх', () => addSpouse(p));
@@ -532,11 +590,41 @@ function selectPerson(id, g){
   m.firstChild && m.firstChild.focus();
 }
 
+/* menu-ээс шууд зураг сонгох */
+function quickPhoto(p){
+  const inp = $('quickFile');
+  inp.onchange = async () => {
+    const f = inp.files[0]; inp.value = '';
+    if (!f) return;
+    try { p.photo = await fileToPhoto(f); commit(false); }
+    catch(err){ toast('Зураг уншигдсангүй'); }
+  };
+  inp.click();
+}
+
 /* ---------- Dialog ---------- */
 function ask(o){
   return new Promise(resolve => {
     const dlg = $('dlg'), form = $('form');
     let result = null;
+    let photo = o.photo || null;
+    const curGender = () => form.querySelector('input[name=g]:checked').value;
+
+    // зургийн дүр: зураг байвал зураг, үгүй бол avatar
+    const renderPh = () => {
+      const b = $('dPhoto'); b.innerHTML = '';
+      if (photo){
+        const im = document.createElement('img'); im.src = photo; im.alt = ''; b.appendChild(im);
+      } else {
+        const svg = document.createElementNS(NS, 'svg');
+        svg.setAttribute('viewBox', '-4 6 64 64');
+        drawAvatar(svg, curGender(), null);
+        b.appendChild(svg);
+      }
+      const cam = document.createElement('span'); cam.className = 'cam'; cam.textContent = photo ? 'Солих' : 'Зураг'; b.appendChild(cam);
+      $('dPhotoDel').style.display = photo ? '' : 'none';
+    };
+
     $('dTitle').textContent = o.title;
     $('dName').value = o.name || '';
     $('gRow').style.display = o.showGender === false ? 'none' : '';
@@ -545,12 +633,24 @@ function ask(o){
     form.querySelector(`input[name=g][value=${o.gender || 'm'}]`).checked = true;
     form.querySelectorAll('input[name=g]').forEach(i => {
       i.disabled = !!o.lockGender; i.parentElement.classList.toggle('dis', !!o.lockGender);
+      i.onchange = renderPh;
     });
+
+    $('dPhoto').onclick = () => $('photoFile').click();
+    $('dPhotoDel').onclick = () => { photo = null; renderPh(); };
+    $('photoFile').onchange = async e => {
+      const f = e.target.files[0]; e.target.value = '';
+      if (!f) return;
+      try { photo = await fileToPhoto(f); renderPh(); }
+      catch(err){ alert('Зураг уншигдсангүй'); }
+    };
+    renderPh();
+
     form.onsubmit = e => {
       e.preventDefault();
       const name = $('dName').value.trim();
       if (!name){ $('dName').focus(); return; }
-      result = { name, gender: form.querySelector('input[name=g]:checked').value, older: $('dOrder').value === 'older' };
+      result = { name, gender: curGender(), older: $('dOrder').value === 'older', photo };
       dlg.close();
     };
     $('dDel').onclick = () => { result = { del:true }; dlg.close(); };
@@ -563,7 +663,7 @@ function toast(msg){
   const t = $('toast'); t.textContent = msg; t.style.display = 'block';
   clearTimeout(toast.t); toast.t = setTimeout(() => t.style.display = 'none', 2800);
 }
-function commit(){ save(); render(true); }
+function commit(fit = true){ save(); render(fit); }
 
 /* ---------- Actions ---------- */
 function ensureParents(p){
@@ -578,9 +678,10 @@ function ensureSpouse(p){
 }
 
 async function addParent(p, g){
-  const r = await ask({ title: g === 'm' ? 'Аав нэмэх' : 'Ээж нэмэх', showGender:false });
+  const r = await ask({ title: g === 'm' ? 'Аав нэмэх' : 'Ээж нэмэх', showGender:false, gender:g });
   if (!r) return;
   const a = newPerson(r.name, g), b = newPerson(g === 'm' ? 'Ээж' : 'Аав', opposite(g));
+  if (r.photo) a.photo = r.photo;
   marry(a, b);
   p.father = (g === 'm' ? a : b).id; p.mother = (g === 'm' ? b : a).id;
   commit();
@@ -591,21 +692,25 @@ async function addSibling(p){
   ensureParents(p);
   const group = [p, ...siblingsOf(p)];
   const s = newPerson(r.name, r.gender);
+  if (r.photo) s.photo = r.photo;
   s.father = p.father; s.mother = p.mother;
   s.ord = r.older ? Math.min(...group.map(x => x.ord)) - 1 : Math.max(...group.map(x => x.ord)) + 1;
   commit();
 }
 async function addSpouse(p){
   const g = opposite(p.gender);
-  const r = await ask({ title: g === 'f' ? 'Эхнэр нэмэх' : 'Нөхөр нэмэх', showGender:false });
+  const r = await ask({ title: g === 'f' ? 'Эхнэр нэмэх' : 'Нөхөр нэмэх', showGender:false, gender:g });
   if (!r) return;
-  marry(p, newPerson(r.name, g));
+  const sp = newPerson(r.name, g);
+  if (r.photo) sp.photo = r.photo;
+  marry(p, sp);
   commit();
 }
 async function addChild(p){
   const r = await ask({ title:'Хүүхэд нэмэх' });
   if (!r) return;
   const sp = ensureSpouse(p), c = newPerson(r.name, r.gender);
+  if (r.photo) c.photo = r.photo;
   c.father = (p.gender === 'm' ? p : sp).id; c.mother = (p.gender === 'm' ? sp : p).id;
   commit();
 }
@@ -636,10 +741,11 @@ function deletePerson(p){
 async function editPerson(p){
   const hasKids = childrenOf(p).length > 0;
   const canDelete = p.id !== S.root;
-  const r = await ask({ title:'Засах', name:p.name, gender:p.gender, order:false, canDelete, lockGender: hasKids || !!p.spouse });
+  const r = await ask({ title:'Засах', name:p.name, gender:p.gender, photo:p.photo, order:false, canDelete, lockGender: hasKids || !!p.spouse });
   if (!r) return;
   if (r.del){ deletePerson(p); return; }
   p.name = r.name; if (!(hasKids || p.spouse)) p.gender = r.gender;
+  if (r.photo) p.photo = r.photo; else delete p.photo;
   commit();
 }
 
@@ -649,6 +755,7 @@ async function start(){
   if (!r) return;
   S = { people:{}, root:1, next:1 };
   const me = newPerson(r.name, r.gender); S.root = me.id; selected = null;
+  if (r.photo) me.photo = r.photo;
   commit();
 }
 $('btnStart').onclick = start;
