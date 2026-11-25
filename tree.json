@@ -173,7 +173,7 @@
     },
     "22": {
       "id": 22,
-      "name": "Адьяа",
+      "name": "Цэцэгээ",
       "gender": "f",
       "father": 9,
       "mother": 10,
@@ -479,7 +479,7 @@
     },
     "56": {
       "id": 56,
-      "name": "Болдоо",
+      "name": "Батболд",
       "gender": "m",
       "father": null,
       "mother": null,
@@ -701,8 +701,98 @@
       "mother": 30,
       "spouse": null,
       "ord": 80
+    },
+    "81": {
+      "id": 81,
+      "name": "Лхагвасүрэн",
+      "gender": "m",
+      "father": 17,
+      "mother": 41,
+      "spouse": null,
+      "ord": 81
+    },
+    "82": {
+      "id": 82,
+      "name": "Жанцандорж",
+      "gender": "m",
+      "father": 17,
+      "mother": 41,
+      "spouse": null,
+      "ord": 82
+    },
+    "83": {
+      "id": 83,
+      "name": "Ууган-Эрдэнэ",
+      "gender": "f",
+      "father": 17,
+      "mother": 41,
+      "spouse": null,
+      "ord": 83
+    },
+    "84": {
+      "id": 84,
+      "name": "Буянаа",
+      "gender": "f",
+      "father": 18,
+      "mother": 42,
+      "spouse": null,
+      "ord": 1
+    },
+    "85": {
+      "id": 85,
+      "name": "Око",
+      "gender": "f",
+      "father": 18,
+      "mother": 42,
+      "spouse": null,
+      "ord": 2
+    },
+    "86": {
+      "id": 86,
+      "name": "Лхамсүрэн",
+      "gender": "m",
+      "father": 18,
+      "mother": 42,
+      "spouse": null,
+      "ord": 4
+    },
+    "87": {
+      "id": 87,
+      "name": "Боожоо",
+      "gender": "f",
+      "father": 18,
+      "mother": 42,
+      "spouse": null,
+      "ord": 3
+    },
+    "88": {
+      "id": 88,
+      "name": "Ука",
+      "gender": "f",
+      "father": 59,
+      "mother": 19,
+      "spouse": null,
+      "ord": 88
+    },
+    "89": {
+      "id": 89,
+      "name": "+1",
+      "gender": "f",
+      "father": 23,
+      "mother": 44,
+      "spouse": null,
+      "ord": 89
+    },
+    "90": {
+      "id": 90,
+      "name": "Даваадорж",
+      "gender": "m",
+      "father": 49,
+      "mother": 24,
+      "spouse": null,
+      "ord": 90
     }
   },
   "root": 1,
-  "next": 81
+  "next": 91
 }
